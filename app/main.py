@@ -21,6 +21,19 @@ def top_pair(ids):
 
     return best_pair
 
+def merge(ids, pair, new_id):
+    result = []
+    i = 0
+    while i < len(ids):
+        if i < len(ids) - 1 and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            result.append(new_id)
+            i += 2
+        else:
+            result.append(ids[i])
+            i += 1
+
+    return result
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
@@ -37,7 +50,13 @@ def main():
             ids = json.load(f)
         pair = top_pair(ids)
         print(json.dumps(list(pair)))
-
+    elif command == "merge":
+        with open(sys.argv[2], "r") as f:
+            ids = json.load(f)
+        pair_text = sys.argv[4]
+        a, b = pair_text.split(",")
+        pair = (int(a), int(b))
+        print(json.dumps(merge(ids, pair, 256)))
     else:
         raise RuntimeError(f"Unknown command {command}")
 
