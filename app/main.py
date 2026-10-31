@@ -162,7 +162,7 @@ def encode_gpt2(text, directory):
     byte_table = bytes_to_unicode()
 
     ids = []
-    for chunk in GPT2_PATTERN.findall(text):
+    for chunk in COMPILED_PATTERN.findall(text):
         ids.extend(encode_chunk_gpt2(chunk, vocab, ranks, byte_table))
     return ids
 
