@@ -46,6 +46,31 @@ def train(text, num_merges):
 
     return merges
 
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    ranks = {}
+
+    for i, pair in enumerate(merges):
+        ranks[(pair[0], pair[1])] = i
+
+    while len(ids) >= 2:
+        # neighbouring pair with the lowest rank
+        best_pair = None
+        best_rank = None
+        for pair in zip(ids, ids[1:]):
+            if pair in ranks:
+                if best_rank is None or ranks[pair] < best_rank:
+                    best_pair = pair
+                    best_rank = ranks[pair]
+
+        # nothing left to merge
+        if best_pair is None:
+            break
+
+        ids = merge(ids, best_pair, 256 + best_rank)
+
+    return ids
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
@@ -74,6 +99,12 @@ def main():
             text = f.read()
         num_merges = int(sys.argv[4])
         print(json.dumps(train(text, num_merges)))
+    elif command == "encode":
+        with open(sys.argv[2], "r") as f:
+            text = f.read()
+        with open(sys.argv[4], "r") as f:
+            merges = json.load(f)
+        print(json.dumps(encode(text, merges)))
     else:
         raise RuntimeError(f"Unknown command {command}")
 
