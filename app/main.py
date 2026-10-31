@@ -1,4 +1,5 @@
 import json
+import os
 import regex
 import sys
 from collections import Counter
@@ -106,6 +107,71 @@ def decode(ids, merges):
     except UnicodeDecodeError:
         return data.decode("utf-8", errors="replace")
 
+def bytes_to_unicode():
+    printable = (list(range(33, 127)) + list(range(161, 173)) + list(range(174, 256)))
+    table = {}
+    for b in printable:
+        table[b] = chr(b)
+
+    extra = 0
+    for b in range(256):
+        if b not in table:
+            table[b] = chr(256 + extra)
+            extra += 1
+    return table
+
+def load_vocab(directory):
+    with open(os.path.join(directory, "vocab.json"), "r", encoding="utf-8") as f:
+        vocab = json.load(f)
+
+    ranks = {}
+    with open(os.path.join(directory, "merges.txt"), "r", encoding="utf-8") as f:
+        lines = f.read().split("\n")
+
+    rank = 0
+    for line_number, line in enumerate(lines):
+        if line_number == 0:
+            continue
+        if line == "":
+            continue
+        left, right = line.split(" ")
+        ranks[(left, right)] = rank
+        rank += 1
+
+    return vocab, ranks
+
+def encode_chunk_gpt2(chunk, vocab, ranks, byte_table):
+    pieces = [byte_table[b] for b in chunk.encode("utf-8")]
+
+    while len(pieces) >= 2:
+        best_pair = None
+        best_rank = None
+        for pair in zip(pieces, pieces[1:]):
+            if pair in ranks:
+                if best_rank is None or ranks[pair] < best_rank:
+                    best_pair = pair
+                    best_rank = ranks[pair]
+        if best_pair is None:
+            break
+        pieces = merge(pieces, best_pair, best_pair[0] + best_pair[1])
+
+    return [vocab[piece] for piece in pieces]
+
+def encode_gpt2(text, directory):
+    vocab, ranks = load_vocab(directory)
+    byte_table = bytes_to_unicode()
+
+    ids = []
+    for chunk in GPT2_PATTERN.findall(text):
+        ids.extend(encode_chunk_gpt2(chunk, vocab, ranks, byte_table))
+    return ids
+
+
+def get_option(name):
+    if name in sys.argv:
+        return sys.argv[sys.argv.index(name) + 1]
+    return None
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
@@ -141,13 +207,13 @@ def main():
     elif command == "encode":
         with open(sys.argv[2], "r") as f:
             text = f.read()
-        with open(sys.argv[4], "r") as f:
-            merges = json.load(f)
-
-        pretokenize = None
-        if "--pretokenize" in sys.argv:
-            pretokenize = sys.argv[sys.argv.index("--pretokenize") + 1]
-        print(json.dumps(encode(text, merges, pretokenize)))
+        vocab_dir = get_option("--vocab")
+        if vocab_dir is not None:
+            print(json.dumps(encode_gpt2(text, vocab_dir)))
+        else:
+            with open(get_option("--merges"), "r") as f:
+                merges = json.load(f)
+            print(json.dumps(encode(text, merges, get_option("--pretokenize"))))
 
     elif command == "decode":
         with open(sys.argv[2], "r") as f:
