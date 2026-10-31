@@ -7,14 +7,14 @@ def main():
     print("Logs from your program will appear here!", file=sys.stderr)
 
     # TODO: Uncomment the code below to pass the first stage
-    #
-    # command = sys.argv[1]
-    # if command == "bytes":
-    #     with open(sys.argv[2], "rb") as f:
-    #         data = f.read()
-    #     print(json.dumps(list(data)))
-    # else:
-    #     raise RuntimeError(f"Unknown command {command}")
+    
+    command = sys.argv[1]
+    if command == "bytes":
+        with open(sys.argv[2], "rb") as f:
+            data = f.read()
+        print(json.dumps(list(data)))
+    else:
+        raise RuntimeError(f"Unknown command {command}")
 
 
 if __name__ == "__main__":
