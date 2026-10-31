@@ -71,6 +71,17 @@ def encode(text, merges):
 
     return ids
 
+def decode(ids, merges):
+    # vocabulary id -> bytes
+    vocabulary = {}
+    for i in range(256):
+        vocabulary[i] = bytes([i])
+    for i, pair in enumerate(merges):
+        vocabulary[256 + i] = vocabulary[pair[0]] + vocabulary[pair[1]]
+
+    data = b"".join(vocabulary[token] for token in ids)
+    return data.decode("utf-8")
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
@@ -82,11 +93,13 @@ def main():
         with open(sys.argv[2], "rb") as f:
             data = f.read()
         print(json.dumps(list(data)))
+
     elif command == "top-pair":
         with open(sys.argv[2], "r") as f:
             ids = json.load(f)
         pair = top_pair(ids)
         print(json.dumps(list(pair)))
+
     elif command == "merge":
         with open(sys.argv[2], "r") as f:
             ids = json.load(f)
@@ -94,17 +107,27 @@ def main():
         a, b = pair_text.split(",")
         pair = (int(a), int(b))
         print(json.dumps(merge(ids, pair, 256)))
+
     elif command == "train":
         with open(sys.argv[2], "r") as f:
             text = f.read()
         num_merges = int(sys.argv[4])
         print(json.dumps(train(text, num_merges)))
+
     elif command == "encode":
         with open(sys.argv[2], "r") as f:
             text = f.read()
         with open(sys.argv[4], "r") as f:
             merges = json.load(f)
         print(json.dumps(encode(text, merges)))
+
+    elif command == "decode":
+        with open(sys.argv[2], "r") as f:
+            ids = json.load(f)
+        with open(sys.argv[4], "r") as f:
+            merges = json.load(f)
+        print(json.dumps(decode(ids, merges)))
+
     else:
         raise RuntimeError(f"Unknown command {command}")
 
