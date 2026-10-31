@@ -1,6 +1,10 @@
 import json
+import regex
 import sys
 from collections import Counter
+
+GPT2_PATTERN = r"'(?:[sdmt]|ll|ve|re)| ?\p{L}++| ?\p{N}++| ?[^\s\p{L}\p{N}]++|\s++$|\s+(?!\S)|\s"
+COMPILED_PATTERN = regex.compile(GPT2_PATTERN)
 
 def top_pair(ids):
     counts = Counter()
@@ -46,12 +50,8 @@ def train(text, num_merges):
 
     return merges
 
-def encode(text, merges):
+def encode_chunk(text, ranks):
     ids = list(text.encode("utf-8"))
-    ranks = {}
-
-    for i, pair in enumerate(merges):
-        ranks[(pair[0], pair[1])] = i
 
     while len(ids) >= 2:
         # neighbouring pair with the lowest rank
@@ -70,6 +70,24 @@ def encode(text, merges):
         ids = merge(ids, best_pair, 256 + best_rank)
 
     return ids
+
+def encode(text, merges, pretokenize):
+    ids = list(text.encode("utf-8"))
+    ranks = {}
+
+    for i, pair in enumerate(merges):
+        ranks[(pair[0], pair[1])] = i
+
+    if pretokenize == "gpt2":
+        chunks = COMPILED_PATTERN.findall(text)
+    else:
+        chunks = [text]
+
+    ids = []
+    for chunk in chunks:
+        ids.extend(encode_chunk(chunk, ranks))
+    return ids
+    
 
 def decode(ids, merges):
     # vocabulary id -> bytes
@@ -132,7 +150,11 @@ def main():
             ids = json.load(f)
         with open(sys.argv[4], "r") as f:
             merges = json.load(f)
-        print(json.dumps(decode(ids, merges)))
+
+        pretokenize = None
+        if "--pretokenize" in sys.argv:
+            pretokenize = sys.argv[sys.argv.index("--pretokenize") + 1]
+        print(json.dumps(decode(ids, merges, pretokenize)))
 
     else:
         raise RuntimeError(f"Unknown command {command}")
