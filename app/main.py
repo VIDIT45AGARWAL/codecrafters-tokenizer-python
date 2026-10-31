@@ -143,18 +143,18 @@ def main():
             text = f.read()
         with open(sys.argv[4], "r") as f:
             merges = json.load(f)
-        print(json.dumps(encode(text, merges)))
+
+        pretokenize = None
+        if "--pretokenize" in sys.argv:
+            pretokenize = sys.argv[sys.argv.index("--pretokenize") + 1]
+        print(json.dumps(encode(text, merges, pretokenize)))
 
     elif command == "decode":
         with open(sys.argv[2], "r") as f:
             ids = json.load(f)
         with open(sys.argv[4], "r") as f:
             merges = json.load(f)
-
-        pretokenize = None
-        if "--pretokenize" in sys.argv:
-            pretokenize = sys.argv[sys.argv.index("--pretokenize") + 1]
-        print(json.dumps(decode(ids, merges, pretokenize)))
+        print(json.dumps(decode(ids, merges)))
 
     else:
         raise RuntimeError(f"Unknown command {command}")
