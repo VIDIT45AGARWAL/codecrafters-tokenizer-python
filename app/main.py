@@ -34,6 +34,18 @@ def merge(ids, pair, new_id):
 
     return result
 
+def train(text, num_merges):
+    ids = list(text.encode("utf-8"))
+    merges = []
+
+    for n in range(num_merges):
+        pair = top_pair(ids)
+        new_id = 256 + n
+        ids = merge(ids, pair, new_id)
+        merges.append(list(pair))
+
+    return merges
+
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
     print("Logs from your program will appear here!", file=sys.stderr)
@@ -57,6 +69,11 @@ def main():
         a, b = pair_text.split(",")
         pair = (int(a), int(b))
         print(json.dumps(merge(ids, pair, 256)))
+    elif command == "train":
+        with open(sys.argv[2], "r") as f:
+            text = f.read()
+        num_merges = int(sys.argv[4])
+        print(json.dumps(train(text, num_merges)))
     else:
         raise RuntimeError(f"Unknown command {command}")
 
