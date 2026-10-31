@@ -80,7 +80,13 @@ def decode(ids, merges):
         vocabulary[256 + i] = vocabulary[pair[0]] + vocabulary[pair[1]]
 
     data = b"".join(vocabulary[token] for token in ids)
-    return data.decode("utf-8")
+
+    if not data:
+        return ""
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("utf-8", errors="replace")
 
 def main():
     # You can use print statements as follows for debugging, they'll be visible when running tests.
